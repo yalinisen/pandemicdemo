@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pandemic Rule Builder — Introduction</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #f7f5f0;
+    --surface:  #ffffff;
+    --border:   #e0dbd0;
+    --text:     #1a1a1a;
+    --muted:    #6b6560;
+    --blue:     #1a5276;
+    --lblue:    #d6e8f5;
+    --orange:   #c0570a;
+    --lorange:  #fdecd8;
+    --red:      #a93226;
+    --lred:     #fde8e4;
+    --green:    #1e6b3a;
+    --lgreen:   #dff0e4;
+    --accent:   #2874a6;
+    --purple:   #6c3483;
+    --lpurple:  #f0e6f8;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  header {
+    background: var(--blue);
+    color: white;
+    padding: 28px 40px 24px;
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  header h1 { font-family: 'Source Serif 4', serif; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+  header .sub { font-size: 13px; opacity: 0.75; font-weight: 300; padding-bottom: 2px; }
+  .phase-badge {
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 3px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .05em;
+    margin-left: auto;
+    transition: opacity .3s;
+  }
+
+  .page { max-width: 920px; margin: 0 auto; padding: 36px 24px 60px; }
+
+  /* ── PHASE PROGRESS BAR ── */
+  .phase-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .phase-seg {
+    flex: 1;
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background .3s, color .3s;
+  }
+  .phase-seg:last-child { border-right: none; }
+  .phase-seg .phase-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--border);
+    color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+    transition: background .3s, color .3s;
+  }
+  .phase-seg.active { background: var(--lblue); color: var(--blue); }
+  .phase-seg.active .phase-num { background: var(--blue); color: white; }
+  .phase-seg.done { color: var(--green); }
+  .phase-seg.done .phase-num { background: var(--green); color: white; }
+
+  /* ── PANELS ── */
+  .panel { display: none; }
+  .panel.visible { display: block; }
+
+  /* ── INFO BOX ── */
+  .info-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    border-left: 4px solid var(--accent);
+  }
+  .info-box h2 { font-family: 'Source Serif 4', serif; font-size: 18px; font-weight: 600; color: var(--blue); margin-bottom: 6px; }
+  .info-box p { color: var(--muted); font-size: 14px; }
+  .info-box p + p { margin-top: 6px; }
+
+  /* ── BUILDER CARD ── */
+  .builder { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+  .builder-header { background: var(--blue); color: white; padding: 14px 24px; font-family: 'Source Serif 4', serif; font-size: 15px; font-weight: 600; }
+  .builder-body { padding: 24px; }
+
+  /* ── GUIDED STEPS (Phase 1) ── */
+  .guided-steps { display: flex; flex-direction: column; gap: 20px; }
+
+  .g-step {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .g-step.unlocked { border-color: var(--accent); }
+  .g-step.completed { border-color: var(--green); }
+  .g-step.locked { opacity: .55; pointer-events: none; }
+
+  .g-step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .g-step.unlocked .g-step-header { background: var(--lblue); }
+  .g-step.completed .g-step-header { background: var(--lgreen); }
+
+  .g-step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    background: var(--border); color: var(--muted);
+    flex-shrink: 0;
+  }
+  .g-step.unlocked .g-step-num { background: var(--blue); color: white; }
+  .g-step.completed .g-step-num { background: var(--green); color: white; }
+
+  .g-step-title { font-weight: 600; font-size: 14px; }
+  .g-step-subtitle { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .g-step-check { margin-left: auto; font-size: 18px; display: none; }
+  .g-step.completed .g-step-check { display: block; }
+
+  .g-step-body { padding: 18px 20px; }
+
+  /* ── IF/THEN TOKENS (visual assembly) ── */
+  .token-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    min-height: 56px;
+  }
+  .token {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .02em;
+  }
+  .token.kw-if { background: var(--lblue); color: var(--blue); }
+  .token.kw-then { background: var(--lorange); color: var(--orange); }
+  .token.kw-else { background: var(--lgreen); color: var(--green); }
+  .token.field { background: #f0eaff; color: #6c3483; }
+  .token.op { background: #f5f5f5; color: #444; }
+  .token.val { background: #fff3cd; color: #7d4e00; }
+  .token.action { background: var(--lorange); color: var(--orange); }
+  .token.placeholder {
+    background: transparent;
+    border: 2px dashed var(--border);
+    color: var(--muted);
+    font-weight: 400;
+    font-style: italic;
+    cursor: default;
+  }
+  .token.placeholder.pulsing { border-color: var(--accent); animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+
+  /* ── CHOICE BUTTONS ── */
+  .choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .choice-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: white;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .1s;
+    font-weight: 500;
+  }
+  .choice-btn:hover { border-color: var(--accent); background: var(--lblue); transform: translateY(-1px); }
+  .choice-btn.selected { border-color: var(--blue); background: var(--lblue); color: var(--blue); }
+  .choice-btn.correct { border-color: var(--green); background: var(--lgreen); color: var(--green); }
+
+  .explanation {
+    background: var(--lgreen);
+    border: 1px solid var(--green);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--green);
+    margin-top: 12px;
+    display: none;
+  }
+  .explanation.visible { display: block; }
+
+  /* ── PREVIEW RULE (shown in step 3) ── */
+  .rule-preview {
+    background: white;
+    border: 1.5px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 14px;
+    margin-top: 4px;
+    display: none;
+  }
+  .rule-preview.visible { display: block; }
+  .rule-preview .rp-line { margin-bottom: 6px; display: flex; gap: 8px; align-items: baseline; }
+  .rule-preview .rp-kw { font-weight: 700; min-width: 46px; }
+  .rule-preview .rp-kw.if { color: var(--blue); }
+  .rule-preview .rp-kw.then { color: var(--orange); }
+  .rule-preview .rp-kw.else { color: var(--green); }
+
+  /* ── PHASE 1 COMPLETE BANNER ── */
+  .phase-complete {
+    background: var(--green);
+    color: white;
+    border-radius: 12px;
+    padding: 20px 28px;
+    display: none;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .phase-complete.visible { display: flex; }
+  .phase-complete h3 { font-family: 'Source Serif 4', serif; font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .phase-complete p { font-size: 13px; opacity: .85; }
+
+  /* ── EXISTING RULE BUILDER (Phase 2) ── */
+  .rule-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+  }
+  .rule-row label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); flex-shrink: 0; min-width: 42px; }
+  .rule-row label.then-lbl { color: var(--orange); }
+
+  select, input[type=text] {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: white;
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+  select { cursor: pointer; }
+  .finding-sel { flex: 1; min-width: 220px; }
+  .sev-sel { min-width: 130px; }
+  .msg-input { flex: 1; min-width: 240px; }
+
+  /* ── PATIENT PICKER ── */
+  .patient-section { margin-bottom: 20px; }
+  .patient-section h3 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
+  .patient-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .pt-card { border: 2px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: border-color .15s, background .15s; background: white; }
+  .pt-card:hover { border-color: var(--accent); background: #f0f7ff; }
+  .pt-card.selected { border-color: var(--accent); background: var(--lblue); }
+  .pt-card .pt-name { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .pt-card .pt-facts { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .pt-card .pt-facts span { display: block; }
+
+  /* ── EVALUATE BUTTON ── */
+  .eval-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 4px; }
+  .btn-eval { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; background: var(--blue); color: white; border: none; border-radius: 8px; padding: 11px 28px; cursor: pointer; transition: background .15s; }
+  .btn-eval:hover { background: var(--accent); }
+  .hint { font-size: 12px; color: var(--muted); }
+
+  /* ── OUTPUT ── */
+  .output-section { margin-top: 24px; min-height: 60px; }
+  .out-card { border-radius: 10px; border-left: 5px solid; padding: 14px 18px; margin-bottom: 10px; animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+  .out-card .out-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .out-card .out-chip { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 2px 8px; border-radius: 999px; }
+  .out-card .out-findings { font-size: 13px; margin-bottom: 6px; }
+  .out-card .out-finding { display: flex; align-items: baseline; gap: 6px; padding: 1px 0; }
+  .out-card .out-finding .arrow { font-size: 10px; }
+  .out-card .out-msg { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .out-card .out-notmet { font-size: 12px; color: var(--green); font-style: italic; }
+  .out-high { border-color: #c0392b; background: #fff5f4; }
+  .out-warn { border-color: #d35400; background: #fff8f2; }
+  .out-info { border-color: #2471a3; background: #f3f8fd; }
+  .out-ok   { border-color: #1e6b3a; background: #f3faf5; }
+
+  /* ── PROCEED BANNER ── */
+  .proceed { background: var(--blue); color: white; border-radius: 12px; padding: 24px 28px; display: none; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .proceed.visible { display: flex; }
+  .proceed .proceed-text h3 { font-family: 'Source Serif 4', serif; font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .proceed .proceed-text p { font-size: 13px; opacity: .8; }
+  .btn-proceed { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700; background: white; color: var(--blue); border: none; border-radius: 8px; padding: 12px 28px; cursor: pointer; transition: background .15s, transform .1s; margin-left: auto; white-space: nowrap; }
+  .btn-proceed:hover { background: #e8f4fd; transform: translateY(-1px); }
+
+  /* ── NEXT PHASE BUTTON ── */
+  .btn-next-phase {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    background: white;
+    color: var(--green);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 28px;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  .btn-next-phase:hover { background: #e8f8ed; transform: translateY(-1px); }
+
+  /* ── STEP DOTS (Phase 2) ── */
+  .steps { display: flex; gap: 8px; align-items: center; margin-bottom: 24px; }
+  .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .step-dot.done   { background: var(--blue); color: white; }
+  .step-dot.active { background: var(--accent); color: white; box-shadow: 0 0 0 4px rgba(40,116,166,.2); }
+  .step-dot.todo   { background: var(--border); color: var(--muted); }
+  .step-line { flex: 1; height: 2px; background: var(--border); max-width: 40px; }
+  .step-dot.done + .step-line { background: var(--blue); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Pandemic Rule Builder</h1>
+    <div class="sub">Canadian Equity Edition &nbsp;·&nbsp; Introduction</div>
+  </div>
+  <div class="phase-badge" id="phaseBadge">Phase 1 of 2 — Build a rule</div>
+</header>
+
+<div class="page">
+
+  <!-- PHASE PROGRESS BAR -->
+  <div class="phase-bar">
+    <div class="phase-seg active" id="phaseSeg1">
+      <div class="phase-num">1</div>
+      <div>
+        <div>Build a rule</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px;">Learn how IF/THEN works</div>
+      </div>
+    </div>
+    <div class="phase-seg" id="phaseSeg2">
+      <div class="phase-num">2</div>
+      <div>
+        <div>Test it on patients</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px;">See the rule fire in real time</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════
+       PHASE 1 — GUIDED RULE CONSTRUCTION
+       ════════════════════════════════════════════ -->
+  <div class="panel visible" id="phase1">
+
+    <div class="info-box">
+      <h2>How does a rule work?</h2>
+      <p>Every rule in this tool follows a simple pattern: <strong>IF</strong> a patient has a certain finding, <strong>THEN</strong> show an alert. No coding — you just choose from plain-language options.</p>
+      <p>Work through the three steps below to assemble your first rule, then you'll test it on real patients.</p>
+    </div>
+
+    <div class="builder">
+      <div class="builder-header">Assemble a rule — step by step</div>
+      <div class="builder-body">
+
+        <!-- LIVE TOKEN DISPLAY -->
+        <div id="tokenRow" class="token-row">
+          <span class="token kw-if">IF</span>
+          <span class="token placeholder pulsing" id="tok-field">choose a data field ↓</span>
+          <span class="token op" id="tok-op" style="display:none"></span>
+          <span class="token val" id="tok-val" style="display:none"></span>
+          <span class="token kw-then" style="display:none" id="tok-then">THEN</span>
+          <span class="token action" id="tok-action" style="display:none"></span>
+        </div>
+
+        <div class="guided-steps">
+
+          <!-- STEP 1 — choose field -->
+          <div class="g-step unlocked" id="gstep1">
+            <div class="g-step-header">
+              <div class="g-step-num">1</div>
+              <div>
+                <div class="g-step-title">Choose what to measure</div>
+                <div class="g-step-subtitle">Pick a patient data field to check</div>
+              </div>
+              <div class="g-step-check">✓</div>
+            </div>
+            <div class="g-step-body">
+              <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">What clinical information should this rule look at?</p>
+              <div class="choices" id="fieldChoices">
+                <button class="choice-btn" data-val="spo2">Oxygen level (SpO₂)</button>
+                <button class="choice-btn" data-val="temp">Temperature</button>
+                <button class="choice-btn" data-val="pcr">PCR test result</button>
+                <button class="choice-btn" data-val="plt">Platelet count</button>
+                <button class="choice-btn" data-val="crowded">Crowded housing</button>
+              </div>
+              <div class="explanation" id="exp1"></div>
+            </div>
+          </div>
+
+          <!-- STEP 2 — choose condition -->
+          <div class="g-step locked" id="gstep2">
+            <div class="g-step-header">
+              <div class="g-step-num">2</div>
+              <div>
+                <div class="g-step-title">Choose the condition</div>
+                <div class="g-step-subtitle">When should this finding trigger an alert?</div>
+              </div>
+              <div class="g-step-check">✓</div>
+            </div>
+            <div class="g-step-body">
+              <p style="font-size:13px;color:var(--muted);margin-bottom:12px;" id="condInstruct">Select the threshold that defines a concern:</p>
+              <div class="choices" id="condChoices"></div>
+              <div class="explanation" id="exp2"></div>
+            </div>
+          </div>
+
+          <!-- STEP 3 — choose action -->
+          <div class="g-step locked" id="gstep3">
+            <div class="g-step-header">
+              <div class="g-step-num">3</div>
+              <div>
+                <div class="g-step-title">Choose what happens</div>
+                <div class="g-step-subtitle">What should the system do when the condition is met?</div>
+              </div>
+              <div class="g-step-check">✓</div>
+            </div>
+            <div class="g-step-body">
+              <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">When the condition is true, the system should:</p>
+              <div class="choices" id="actionChoices">
+                <button class="choice-btn" data-val="urgent">Show a red urgent alert</button>
+                <button class="choice-btn" data-val="warn">Show an orange warning</button>
+                <button class="choice-btn" data-val="info">Show a blue informational note</button>
+              </div>
+              <div class="explanation" id="exp3"></div>
+
+              <div class="rule-preview" id="rulePreview">
+                <div class="rp-line"><span class="rp-kw if">IF</span> <span id="rp-cond"></span></div>
+                <div class="rp-line"><span class="rp-kw then">THEN</span> <span id="rp-action"></span></div>
+                <div class="rp-line"><span class="rp-kw else">ELSE</span> no alert — patient does not meet this criterion</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /guided-steps -->
+      </div>
+    </div>
+
+    <!-- Phase 1 complete -->
+    <div class="phase-complete" id="phase1Complete">
+      <div class="proceed-text">
+        <h3>You just built an IF/THEN rule.</h3>
+        <p>That's exactly how this tool works — no code, no IT required. Now let's test your rule against real patient records.</p>
+      </div>
+      <button class="btn-next-phase" id="btnPhase2">Test it on patients →</button>
+    </div>
+
+  </div><!-- /phase1 -->
+
+
+  <!-- ════════════════════════════════════════════
+       PHASE 2 — EXISTING DEMO (select rule + patient)
+       ════════════════════════════════════════════ -->
+  <div class="panel" id="phase2">
+
+    <div class="info-box">
+      <h2>Now try it freely</h2>
+      <p>Below is the simplified demo tool. Choose any clinical finding, set the alert type and message, then pick a patient and click <strong>Evaluate</strong> to see whether the rule fires.</p>
+      <p>This is exactly what a clinician would do in the full tool — in seconds, without any programming.</p>
+    </div>
+
+    <!-- STEP INDICATOR -->
+    <div class="steps">
+      <div class="step-dot active" id="sd1">1</div><div class="step-line"></div>
+      <div class="step-dot todo"   id="sd2">2</div><div class="step-line"></div>
+      <div class="step-dot todo"   id="sd3">3</div><div class="step-line"></div>
+      <div class="step-dot todo"   id="sd4">4</div>
+      <small style="color:var(--muted);font-size:12px;margin-left:8px;">Build a rule &nbsp;→&nbsp; Pick a patient &nbsp;→&nbsp; Evaluate &nbsp;→&nbsp; See output</small>
+    </div>
+
+    <!-- RULE BUILDER -->
+    <div class="builder">
+      <div class="builder-header">Build a simple rule</div>
+      <div class="builder-body">
+        <div class="rule-row">
+          <label>IF</label>
+          <select class="finding-sel" id="finding">
+            <option value="">— choose a clinical finding —</option>
+            <optgroup label="Vital signs">
+              <option value="spo2_low">Oxygen level (SpO₂) is below 91%</option>
+              <option value="spo2_critical">Oxygen level (SpO₂) is below 88% — critical</option>
+              <option value="fever">Fever ≥ 38.5°C</option>
+              <option value="high_rr">Breathing rate is high (≥ 24 breaths/min)</option>
+              <option value="low_bp">Blood pressure is low — possible shock (SBP ≤ 90)</option>
+            </optgroup>
+            <optgroup label="Test results">
+              <option value="pcr_pos">PCR test: Positive</option>
+              <option value="antigen_pos">Antigen Breath Test: Positive</option>
+              <option value="ns1_pos">NS1 Antigen: Positive (hemorrhagic fever marker)</option>
+              <option value="high_crp">Inflammation marker high (CRP > 80 mg/L)</option>
+              <option value="low_plt">Platelet count low (≤ 80) — bleeding risk</option>
+              <option value="high_ast">Liver enzymes elevated (AST > 200) — liver injury</option>
+            </optgroup>
+            <optgroup label="Social / equity factors">
+              <option value="livestock">Has had livestock or poultry contact</option>
+              <option value="crowded">Lives in crowded housing</option>
+              <option value="no_sick_leave">No access to paid sick leave</option>
+              <option value="ltc">Lives in long-term care</option>
+              <option value="no_broadband">No reliable broadband access</option>
+              <option value="travel">Recent international travel</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="rule-row">
+          <label class="then-lbl">THEN</label>
+          <select class="sev-sel" id="severity">
+            <option value="info">ℹ️  Note (blue)</option>
+            <option value="warn">⚠️  Warning (orange)</option>
+            <option value="high">🔴  Urgent (red)</option>
+          </select>
+          <input type="text" class="msg-input" id="message" placeholder="Type your alert message here — e.g. Isolate patient, notify public health" />
+        </div>
+      </div>
+    </div>
+
+    <!-- PATIENT PICKER -->
+    <div class="builder">
+      <div class="builder-header">Choose a patient to test against</div>
+      <div class="builder-body">
+        <div class="patient-section">
+          <div class="patient-cards" id="patientCards"></div>
+        </div>
+        <div class="eval-row">
+          <button class="btn-eval" id="btnEval">Evaluate ▶</button>
+          <span class="hint" id="evalHint">Select a finding above and a patient, then click Evaluate.</span>
+        </div>
+        <div class="output-section" id="output"></div>
+      </div>
+    </div>
+
+    <!-- PROCEED -->
+    <div class="proceed" id="proceed">
+      <div class="proceed-text">
+        <h3>✓ You've tested your first rule!</h3>
+        <p>The full Rule Builder lets you combine multiple conditions, test across all patients, add equity flags, export rules as JSON, and much more. Try more patients above, or jump in now.</p>
+      </div>
+      <button class="btn-proceed" id="btnProceed">Open full Rule Builder →</button>
+    </div>
+
+  </div><!-- /phase2 -->
+
+</div><!-- /page -->
+
+<script>
+// ── PHASE 1 DATA ─────────────────────────────────────────────────────────────
+
+const FIELD_META = {
+  spo2:    { label:"Oxygen level (SpO₂)", tok:"SpO₂", explain:"Oxygen saturation below 91% is a key warning sign of respiratory distress — one of the earliest and most important pandemic indicators." },
+  temp:    { label:"Temperature", tok:"Temperature", explain:"Fever ≥ 38.5°C is a core case-definition criterion in most infectious disease protocols." },
+  pcr:     { label:"PCR test result", tok:"PCR result", explain:"A positive PCR confirms the infection. This is a categorical field (positive/negative) rather than a threshold." },
+  plt:     { label:"Platelet count", tok:"Platelet count", explain:"A platelet count ≤ 80 × 10⁹/L is an early marker of hemorrhagic fever severity and bleeding risk." },
+  crowded: { label:"Crowded housing", tok:"Crowded housing", explain:"This is a social/equity factor — crowded housing increases transmission risk and signals that isolation at home may not be feasible." },
+};
+
+const COND_OPTIONS = {
+  spo2:    [
+    { label:"is below 91% (warning)", val:"spo2_91", op:"<", threshold:"91%",  correct:true },
+    { label:"is above 99%", val:"spo2_99", op:">", threshold:"99%", correct:false },
+    { label:"equals exactly 95%", val:"spo2_95", op:"=", threshold:"95%", correct:false },
+  ],
+  temp:    [
+    { label:"is 37.0°C or higher (normal body temp)", val:"t_37", op:"≥", threshold:"37.0°C", correct:false },
+    { label:"is 38.5°C or higher (fever threshold)", val:"t_38", op:"≥", threshold:"38.5°C", correct:true },
+    { label:"is below 36.0°C (hypothermia)", val:"t_36", op:"<", threshold:"36.0°C", correct:false },
+  ],
+  pcr:     [
+    { label:"result is Positive", val:"pcr_pos", op:"=", threshold:"Positive", correct:true },
+    { label:"result is Negative", val:"pcr_neg", op:"=", threshold:"Negative", correct:false },
+    { label:"result is Inconclusive", val:"pcr_inc", op:"=", threshold:"Inconclusive", correct:false },
+  ],
+  plt:     [
+    { label:"is above 400 (high-normal)", val:"plt_400", op:">", threshold:"400", correct:false },
+    { label:"is below 80 × 10⁹/L (warning)", val:"plt_80", op:"<", threshold:"80 × 10⁹/L", correct:true },
+    { label:"is below 10 × 10⁹/L (critical bleed risk)", val:"plt_10", op:"<", threshold:"10 × 10⁹/L", correct:false },
+  ],
+  crowded: [
+    { label:"is YES (patient lives in crowded housing)", val:"c_yes", op:"=", threshold:"Yes", correct:true },
+    { label:"is NO", val:"c_no", op:"=", threshold:"No", correct:false },
+  ],
+};
+
+const ACTION_EXPLAIN = {
+  urgent: "Red urgent alerts are for findings that require immediate clinical action — admission, isolation, or emergency response.",
+  warn:   "Orange warnings indicate a clinically significant finding that needs follow-up soon, but may not be immediately life-threatening.",
+  info:   "Blue notes are for contextual information — social factors, equity flags, or findings to document without requiring immediate action.",
+};
+
+// State
+let p1Field = null, p1Cond = null, p1Action = null;
+
+// ── TOKEN DISPLAY ─────────────────────────────────────────────────────────────
+function setToken(id, text, show=true) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.style.display = show ? "" : "none";
+}
+function setTokenClass(id, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = "token " + cls;
+}
+
+// ── STEP 1 — FIELD ───────────────────────────────────────────────────────────
+document.getElementById("fieldChoices").addEventListener("click", e => {
+  const btn = e.target.closest(".choice-btn");
+  if (!btn) return;
+  p1Field = btn.dataset.val;
+
+  document.querySelectorAll("#fieldChoices .choice-btn").forEach(b => b.classList.remove("selected","correct"));
+  btn.classList.add("correct");
+
+  const meta = FIELD_META[p1Field];
+  setToken("tok-field", meta.tok);
+  setTokenClass("tok-field", "token field");
+  document.getElementById("tok-field").classList.remove("placeholder","pulsing");
+
+  const exp = document.getElementById("exp1");
+  exp.textContent = "✓ Good choice. " + meta.explain;
+  exp.classList.add("visible");
+
+  // Populate step 2
+  buildCondChoices(p1Field);
+  unlockStep("gstep2");
+
+  completeStep("gstep1");
+});
+
+function buildCondChoices(field) {
+  const opts = COND_OPTIONS[field];
+  const container = document.getElementById("condChoices");
+  container.innerHTML = "";
+  opts.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.dataset.val = opt.val;
+    btn.dataset.correct = opt.correct;
+    btn.dataset.op = opt.op;
+    btn.dataset.threshold = opt.threshold;
+    btn.textContent = opt.label;
+    container.appendChild(btn);
+  });
+}
+
+// ── STEP 2 — CONDITION ───────────────────────────────────────────────────────
+document.getElementById("condChoices").addEventListener("click", e => {
+  const btn = e.target.closest(".choice-btn");
+  if (!btn) return;
+
+  document.querySelectorAll("#condChoices .choice-btn").forEach(b => b.classList.remove("selected","correct"));
+
+  const isCorrect = btn.dataset.correct === "true";
+  const meta = FIELD_META[p1Field];
+  p1Cond = { op: btn.dataset.op, threshold: btn.dataset.threshold, label: btn.textContent };
+
+  if (isCorrect) {
+    btn.classList.add("correct");
+    document.getElementById("exp2").textContent = "✓ Correct. This is the clinically meaningful threshold for " + meta.label.toLowerCase() + ".";
+  } else {
+    btn.classList.add("selected");
+    document.getElementById("exp2").textContent = "That threshold is technically valid as a rule, but clinically it would either miss most real cases or generate too many false positives. Try the option that matches standard clinical practice.";
+    document.getElementById("exp2").classList.add("visible");
+    return;
+  }
+  document.getElementById("exp2").classList.add("visible");
+
+  // Update tokens
+  setToken("tok-op", btn.dataset.op);
+  setToken("tok-val", btn.dataset.threshold);
+
+  unlockStep("gstep3");
+  completeStep("gstep2");
+});
+
+// ── STEP 3 — ACTION ──────────────────────────────────────────────────────────
+document.getElementById("actionChoices").addEventListener("click", e => {
+  const btn = e.target.closest(".choice-btn");
+  if (!btn) return;
+  p1Action = btn.dataset.val;
+
+  document.querySelectorAll("#actionChoices .choice-btn").forEach(b => b.classList.remove("selected","correct"));
+  btn.classList.add("correct");
+
+  document.getElementById("exp3").textContent = "✓ " + ACTION_EXPLAIN[p1Action];
+  document.getElementById("exp3").classList.add("visible");
+
+  // Update tokens
+  const actionLabels = { urgent:"Show red urgent alert", warn:"Show orange warning", info:"Show blue informational note" };
+  document.getElementById("tok-then").style.display = "";
+  setToken("tok-action", actionLabels[p1Action]);
+
+  // Show full rule preview
+  const meta = FIELD_META[p1Field];
+  document.getElementById("rp-cond").textContent = meta.tok + " " + p1Cond.op + " " + p1Cond.threshold;
+  document.getElementById("rp-action").textContent = actionLabels[p1Action];
+  document.getElementById("rulePreview").classList.add("visible");
+
+  completeStep("gstep3");
+  document.getElementById("phase1Complete").classList.add("visible");
+  document.getElementById("phase1Complete").scrollIntoView({ behavior:"smooth", block:"nearest" });
+});
+
+// ── STEP HELPERS ─────────────────────────────────────────────────────────────
+function unlockStep(id) {
+  const el = document.getElementById(id);
+  el.classList.remove("locked");
+  el.classList.add("unlocked");
+  setTimeout(() => el.scrollIntoView({ behavior:"smooth", block:"nearest" }), 100);
+}
+function completeStep(id) {
+  const el = document.getElementById(id);
+  el.classList.remove("unlocked");
+  el.classList.add("completed");
+}
+
+// ── TRANSITION TO PHASE 2 ────────────────────────────────────────────────────
+document.getElementById("btnPhase2").addEventListener("click", () => {
+  document.getElementById("phase1").classList.remove("visible");
+  document.getElementById("phase2").classList.add("visible");
+
+  document.getElementById("phaseSeg1").classList.remove("active");
+  document.getElementById("phaseSeg1").classList.add("done");
+  document.getElementById("phaseSeg2").classList.add("active");
+  document.getElementById("phaseBadge").textContent = "Phase 2 of 2 — Test it";
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+
+// ── PHASE 2 DATA ─────────────────────────────────────────────────────────────
+
+const PATIENTS = [
+  { id:"P-A", name:"Patient A", desc:"67-year-old, urban, low income",
+    facts:["SpO₂: 93%","Temp: 37.9°C","PCR: Positive","CRP: normal"],
+    data:{ spo2:93, temp_c:37.9, resp_rate:20, sbp:128, crp:42, pcr:"Positive", antigen:"Negative", ns1:"Negative", plt:257, ast:35, livestock:false, crowded:true, sick_leave:false, ltc:false, broadband:true, travel:false } },
+  { id:"P-B", name:"Patient B", desc:"45-year-old, suburban, employed",
+    facts:["SpO₂: 98%","Temp: 36.8°C","PCR: Negative","CRP: normal"],
+    data:{ spo2:98, temp_c:36.8, resp_rate:14, sbp:128, crp:8, pcr:"Negative", antigen:"Negative", ns1:"Negative", plt:310, ast:22, livestock:false, crowded:false, sick_leave:true, ltc:false, broadband:true, travel:false } },
+  { id:"PX-1", name:"James (Pulmona-X)", desc:"62-year-old, farm worker",
+    facts:["SpO₂: 90%","Temp: 38.5°C","PCR: Positive","CRP: 114 mg/L"],
+    data:{ spo2:90.4, temp_c:38.5, resp_rate:28, sbp:130, crp:113.6, pcr:"Positive", antigen:"Positive", ns1:"Negative", plt:221, ast:38, livestock:true, crowded:true, sick_leave:false, ltc:false, broadband:true, travel:false } },
+  { id:"PX-2", name:"Carlos (Pulmona-X)", desc:"23-year-old, farm worker, rural",
+    facts:["SpO₂: 88%","Temp: 38.2°C","PCR: Positive","RR: 28"],
+    data:{ spo2:88.3, temp_c:38.2, resp_rate:28, sbp:130, crp:98, pcr:"Positive", antigen:"Positive", ns1:"Negative", plt:239, ast:39, livestock:true, crowded:true, sick_leave:false, ltc:false, broadband:false, travel:false } },
+  { id:"HV-1", name:"David (Hemora-V)", desc:"74-year-old, returned traveller",
+    facts:["Platelets: 61","AST: 1200 U/L","NS1: Positive","BP: 90/55"],
+    data:{ spo2:94.6, temp_c:38.3, resp_rate:23, sbp:90, crp:55, pcr:"Positive", antigen:"Negative", ns1:"Positive", plt:60.8, ast:1199, livestock:false, crowded:false, sick_leave:true, ltc:false, broadband:true, travel:true } },
+  { id:"HV-3", name:"Hélène (Hemora-V)", desc:"75-year-old, long-term care",
+    facts:["Platelets: 61","AST: 930 U/L","NS1: Positive","LTC resident"],
+    data:{ spo2:95.6, temp_c:37.9, resp_rate:23, sbp:90, crp:45, pcr:"Positive", antigen:"Negative", ns1:"Positive", plt:61.1, ast:930, livestock:false, crowded:false, sick_leave:false, ltc:true, broadband:false, travel:false } },
+];
+
+const FINDINGS = {
+  spo2_low:     { test: p => p.spo2 < 91,         label: d => `SpO₂: ${d.spo2}% (< 91)` },
+  spo2_critical:{ test: p => p.spo2 < 88,         label: d => `SpO₂: ${d.spo2}% (< 88 — critical)` },
+  fever:        { test: p => p.temp_c >= 38.5,    label: d => `Temperature: ${d.temp_c}°C (≥ 38.5)` },
+  high_rr:      { test: p => p.resp_rate >= 24,   label: d => `Breathing rate: ${d.resp_rate}/min (≥ 24)` },
+  low_bp:       { test: p => p.sbp <= 90,         label: d => `Blood pressure: ${d.sbp} mmHg systolic (≤ 90)` },
+  pcr_pos:      { test: p => p.pcr === "Positive",     label: d => `PCR test: Positive` },
+  antigen_pos:  { test: p => p.antigen === "Positive", label: d => `Antigen Breath Test: Positive` },
+  ns1_pos:      { test: p => p.ns1 === "Positive",     label: d => `NS1 Antigen: Positive` },
+  high_crp:     { test: p => p.crp > 80,          label: d => `CRP: ${d.crp} mg/L (> 80)` },
+  low_plt:      { test: p => p.plt <= 80,         label: d => `Platelets: ${d.plt} × 10⁹/L (≤ 80)` },
+  high_ast:     { test: p => p.ast > 200,         label: d => `AST: ${d.ast} U/L (> 200)` },
+  livestock:    { test: p => p.livestock,         label: d => `Livestock / poultry contact: yes` },
+  crowded:      { test: p => p.crowded,           label: d => `Crowded housing: yes` },
+  no_sick_leave:{ test: p => !p.sick_leave,       label: d => `No paid sick leave` },
+  ltc:          { test: p => p.ltc,               label: d => `Long-term care resident` },
+  no_broadband: { test: p => !p.broadband,        label: d => `No reliable broadband` },
+  travel:       { test: p => p.travel,            label: d => `Recent international travel: yes` },
+};
+
+const SEV_META = {
+  high: { cls:"out-high", border:"#c0392b", chip:"#c0392b", chipBg:"rgba(192,57,43,0.12)", icon:"🔴" },
+  warn: { cls:"out-warn", border:"#d35400", chip:"#d35400", chipBg:"rgba(211,84,0,0.12)",  icon:"⚠️" },
+  info: { cls:"out-info", border:"#2471a3", chip:"#2471a3", chipBg:"rgba(36,113,163,0.12)",icon:"ℹ️" },
+};
+
+// Render patient cards
+let selectedPatient = null;
+const cardsEl = document.getElementById("patientCards");
+PATIENTS.forEach(pt => {
+  const card = document.createElement("div");
+  card.className = "pt-card";
+  card.innerHTML = `<div class="pt-name">${pt.name}</div><div class="pt-facts">${pt.facts.map(f=>`<span>${f}</span>`).join("")}</div><div class="pt-facts" style="margin-top:4px;color:#999;">${pt.desc}</div>`;
+  card.addEventListener("click", () => {
+    document.querySelectorAll(".pt-card").forEach(c => c.classList.remove("selected"));
+    card.classList.add("selected");
+    selectedPatient = pt;
+    updateHint();
+  });
+  cardsEl.appendChild(card);
+});
+
+function updateHint() {
+  const f = document.getElementById("finding").value;
+  const p = selectedPatient;
+  if (!f && !p) document.getElementById("evalHint").textContent = "Select a finding above and a patient, then click Evaluate.";
+  else if (!f)  document.getElementById("evalHint").textContent = "Now choose a clinical finding above.";
+  else if (!p)  document.getElementById("evalHint").textContent = "Now click a patient to test against.";
+  else          document.getElementById("evalHint").textContent = "Ready — click Evaluate to see the result.";
+}
+document.getElementById("finding").addEventListener("change", () => { updateHint(); updateStepDots(); });
+
+let evalCount = 0;
+document.getElementById("btnEval").addEventListener("click", () => {
+  const findingKey = document.getElementById("finding").value;
+  const sev = document.getElementById("severity").value;
+  const msg = document.getElementById("message").value.trim() || "Alert triggered — review patient.";
+  const outEl = document.getElementById("output");
+
+  if (!findingKey) { alert("Please choose a clinical finding first."); return; }
+  if (!selectedPatient) { alert("Please click on a patient card first."); return; }
+
+  const finding = FINDINGS[findingKey];
+  const fired = finding.test(selectedPatient.data);
+  const sm = SEV_META[sev] || SEV_META.info;
+
+  outEl.innerHTML = "";
+  if (fired) {
+    const card = document.createElement("div");
+    card.className = `out-card ${sm.cls}`;
+    card.style.borderLeftColor = sm.border;
+    card.innerHTML = `
+      <div class="out-title" style="color:${sm.border}">${sm.icon} ${selectedPatient.name}
+        <span class="out-chip" style="color:${sm.chip};background:${sm.chipBg};">${sev.toUpperCase()}</span>
+      </div>
+      <div class="out-findings"><div class="out-finding"><span class="arrow" style="color:${sm.border}">▸</span><span>${finding.label(selectedPatient.data)}</span></div></div>
+      <div class="out-msg">${msg}</div>`;
+    outEl.appendChild(card);
+  } else {
+    const card = document.createElement("div");
+    card.className = "out-card out-ok";
+    card.innerHTML = `<div class="out-title" style="color:var(--green)">✓ ${selectedPatient.name} <span class="out-chip" style="color:var(--green);background:var(--lgreen);">NOT MET</span></div><div class="out-notmet">This patient does not meet the selected criterion.</div>`;
+    outEl.appendChild(card);
+  }
+
+  evalCount++;
+  updateStepDots();
+  if (evalCount >= 1) {
+    document.getElementById("proceed").classList.add("visible");
+    document.getElementById("proceed").scrollIntoView({ behavior:"smooth", block:"nearest" });
+  }
+});
+
+function updateStepDots() {
+  const dots = ["sd1","sd2","sd3","sd4"].map(id => document.getElementById(id));
+  const finding = document.getElementById("finding").value;
+  if (finding)         { dots[0].className="step-dot done"; dots[1].className="step-dot active"; }
+  if (selectedPatient) { dots[1].className="step-dot done"; dots[2].className="step-dot active"; }
+  if (evalCount >= 1)  { dots[2].className="step-dot done"; dots[3].className="step-dot active"; }
+  if (evalCount >= 2)  { dots[3].className="step-dot done"; }
+}
+
+document.getElementById("btnProceed").addEventListener("click", () => {
+  window.location.href = "pandemicrul-builderf.html";
+});
+</script>
+</body>
+</html>
