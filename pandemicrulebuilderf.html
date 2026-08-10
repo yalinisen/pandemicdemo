@@ -2294,13 +2294,17 @@ function renderTypeahead({ mountEl, items, valueObj, placeholder, onPick }) {
 
     menu.style.display = "block";
     menu.querySelectorAll(".ta-item[data-code]").forEach(el=>{
-      el.onclick = () => {
-        const code = el.getAttribute("data-code");
-        const display = el.getAttribute("data-display");
-        inp.value = `${display} [${code}]`;
-        menu.style.display = "none";
-        onPick({ code, display });
-      };
+      // v4.8: use mousedown + preventDefault so the input doesn't blur
+         // before the pick completes. Fixes macOS Safari not registering
+         // dropdown selections (labs / meds / dx typeaheads).
+         el.addEventListener("mousedown", (e) => {
+           e.preventDefault();
+           const code = el.getAttribute("data-code");
+           const display = el.getAttribute("data-display");
+           inp.value = `${display} [${code}]`;
+           menu.style.display = "none";
+           onPick({ code, display });
+         });
     });
   }
 
